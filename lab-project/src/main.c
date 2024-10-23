@@ -6,7 +6,6 @@
 // ----------------------------------------------------------------------------
 // School: University of Victoria, Canada.
 // Course: ECE 355 "Microprocessor-Based Systems".
-// This is template code for Part 2 of Introductory Lab.
 //
 // See "system/include/cmsis/stm32f051x8.h" for register/bit definitions.
 // See "system/src/cmsis/vectors_stm32f051x8.c" for handler declarations.
@@ -15,6 +14,7 @@
 #include <stdio.h>
 #include "diag/Trace.h"
 #include "cmsis/cmsis_device.h"
+#include <stm32f051x8.h>
 
 // ----------------------------------------------------------------------------
 //
@@ -55,42 +55,33 @@ void myEXTI_Init(void);
 // NOTE: You'll need at least one global variable
 // (say, timerTriggered = 0 or 1) to indicate
 // whether TIM2 has started counting or not.
-volatile double secondEdge = 0; //Holds the timer at the second edge
-volatile uint8_t timerTriggered = 0; //Indicates if the first edge has been detected
+volatile double secondEdge = 0; // Holds the timer at the second edge
+volatile uint8_t timerTriggered = 0; // Indicates if the first edge has been detected
 
 /*** Call this function to boost the STM32F0xx clock to 48 MHz ***/
 
 void SystemClock48MHz( void )
 {
-//
-// Disable the PLL
-//
-    RCC->CR &= ~(RCC_CR_PLLON);
-//
-// Wait for the PLL to unlock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
-//
-// Configure the PLL for 48-MHz system clock
-//
-    RCC->CFGR = 0x00280000;
-//
-// Enable the PLL
-//
-    RCC->CR |= RCC_CR_PLLON;
-//
-// Wait for the PLL to lock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
-//
-// Switch the processor to the PLL clock source
-//
-    RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
-//
-// Update the system with the new clock frequency
-//
-    SystemCoreClockUpdate();
-
+	// Disable the PLL
+	RCC->CR &= ~(RCC_CR_PLLON);
+	
+	// Wait for the PLL to unlock
+	while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
+	
+	// Configure the PLL for 48-MHz system clock
+	RCC->CFGR = 0x00280000;
+	
+	// Enable the PLL
+	RCC->CR |= RCC_CR_PLLON;
+	
+	// Wait for the PLL to lock
+	while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
+	
+	// Switch the processor to the PLL clock source
+	RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
+	
+	// Update the system with the new clock frequency
+	SystemCoreClockUpdate();
 }
 
 /*****************************************************************/
@@ -217,42 +208,19 @@ void TIM2_IRQHandler()
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void EXTI2_3_IRQHandler()
 {
-	// Declare/initialize your local variables here...
-
 	/* Check if EXTI2 interrupt pending flag is indeed set */
 	if ((EXTI->PR & EXTI_PR_PR2) != 0)
 	{
-		/*
-		 1. If this is the first edge:
-			- Clear count register (TIM2->CNT).
-			- Start timer (TIM2->CR1).
-
-		 Else (this is the second edge):
-			- Stop timer (TIM2->CR1).
-			- Read out count register (TIM2->CNT).
-			- Calculate signal period and frequency.
-			- f = 1/T
-				- T = time between rising edges / system clock
-				- Board at 48MHz
-			- Print calculated values to the console.
-			  NOTE: Function trace_printf does not work
-			  with floating-point numbers: you must use
-			  "unsigned int" type to print your signal
-			  period and frequency.
-
-		 2. Clear EXTI2 interrupt pending flag (EXTI->PR).
-		 NOTE: A pending register (PR) bit is cleared
-		 by writing 1 to it.
-		*/
-		if(timerTriggered ==0)
+		// Iff first edge of square wave, start timer
+		if (timerTriggered == 0)
 		{
 			TIM2->CNT = 0;
-			TIM2->CR1 |= TIM_CR1_CEN; // Start timer
+			TIM2->CR1 |= TIM_CR1_CEN;
 			timerTriggered = 1;
 		}
 		else
 		{
-			//second edge detected : stop timer and calculate frequency
+			// Second edge detected : stop timer and calculate frequency
 			TIM2 ->CR1 &= ~(TIM_CR1_CEN); // Stop timer
 			secondEdge = TIM2->CNT ; //read TIM2 count
 
@@ -263,10 +231,10 @@ void EXTI2_3_IRQHandler()
 			trace_printf("Period is %.2f cycles\n", period);
 			trace_printf("Frequency is %.2f Hz \n", frequency);
 
-
 			timerTriggered = 0;
 		}
 
+		// Clear EXTI2 interrupt pending flag
 		EXTI->PR |= EXTI_PR_PR2;
 	}
 }
