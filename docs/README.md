@@ -1,6 +1,6 @@
 ### Project Details
 
-![[img/project-overview.png]]
+<img src="img/project-overview.png" width=400>
 
 - Potentiometer is connected to analog-digital converter
 - We convert this *back* into digital, and use the NE555 and 4N35 to generate a square wave based on the resistance of the potentiometer
@@ -10,7 +10,7 @@
 
 Example wiring:
 
-![[img/example-wiring.png]]
+<img src="img/example-wiring.png" width=400>
 
 ### Startup Configuration
 - Clear screen (write all zeros)
