@@ -243,60 +243,20 @@ unsigned char Characters[][8] = {
 };
 
 
-
-void SystemClock48MHz( void )
-{
-//
-// Disable the PLL
-//
-    RCC->CR &= ~(RCC_CR_PLLON);
-//
-// Wait for the PLL to unlock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
-//
-// Configure the PLL for a 48MHz system clock
-//
-    RCC->CFGR = 0x00280000;
-
-//
-// Enable the PLL
-//
-    RCC->CR |= RCC_CR_PLLON;
-
-//
-// Wait for the PLL to lock
-//
-    while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
-
-//
-// Switch the processor to the PLL clock source
-//
-    RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
-
-//
-// Update the system with the new clock frequency
-//
-    SystemCoreClockUpdate();
-
-}
-
-
-
 int
 main(int argc, char* argv[])
 {
 
 	SystemClock48MHz();
 
-    
+
 
 	oled_config();
 
 	while (1)
 	{
 
-        
+
 
 		refresh_OLED();
 	}
@@ -320,10 +280,21 @@ void refresh_OLED( void )
        - for each c = ASCII code = Buffer[0], Buffer[1], ...,
            send 8 bytes in Characters[c][0-7] to LED Display
     */
-
+    //Added lines
+    oled_Write_Cmd(0xB0); // Set page address to 0
+       oled_Write_Cmd(0x00); // Set column lower address
+       oled_Write_Cmd(0x10); // Set column higher address
+       for (int i = 0; i < strlen(Buffer); i++)
+       {
+           for (int j = 0; j < 8; j++)
+           {
+               oled_Write_Data(Characters[Buffer[i] - 32][j]);
+           }
+       }
+    //End of added lines
     
 
-
+    // Added comment Display frequency
     snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", Freq );
     /* Buffer now contains your character ASCII codes for LED Display
        - select PAGE (LED Display line) and set starting SEG (column)
@@ -331,7 +302,21 @@ void refresh_OLED( void )
            send 8 bytes in Characters[c][0-7] to LED Display
     */
 
-    
+    //Added lines
+    oled_Write_Cmd(0xB1); // Set page address to 1
+        oled_Write_Cmd(0x00); // Set column lower address
+        oled_Write_Cmd(0x10); // Set column higher address
+        for (int i = 0; i < strlen(Buffer); i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                oled_Write_Data(Characters[Buffer[i] - 32][j]);
+            }
+        }
+
+        // Delay for refresh rate (using TIM3, for example)
+        HAL_Delay(100); // 100 ms delay for ~10 frames/sec refresh rate
+    //End of added lines
 
 
 	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
@@ -346,8 +331,16 @@ void oled_Write_Cmd( unsigned char cmd )
     // make PB6 = CS# = 1
     // make PB7 = D/C# = 0
     // make PB6 = CS# = 0
+	//Added lines
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // D/C low for command
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); // CS low
+	//End of added lines
     oled_Write( cmd );
     // make PB6 = CS# = 1
+    //Added lines
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
+    //End of added lines
 }
 
 void oled_Write_Data( unsigned char data )
@@ -355,8 +348,16 @@ void oled_Write_Data( unsigned char data )
     // make PB6 = CS# = 1
     // make PB7 = D/C# = 1
     // make PB6 = CS# = 0 
+	//Added lines
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);  // D/C high for data
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); // CS low
+	//End of added lines
     oled_Write( data );
     // make PB6 = CS# = 1
+    //Added lines
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
+    //End of added lines
 }
 
 
@@ -365,7 +366,10 @@ void oled_Write( unsigned char Value )
 
     /* Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR) */
 
-    
+    //Added lines
+	 // Wait until SPI is ready
+	    while (!(SPI1->SR & SPI_SR_TXE));
+	//End of added lines
 
     /* Send one 8-bit character:
        - This function also sets BIDIOE = 1 in SPI1_CR1
@@ -374,8 +378,11 @@ void oled_Write( unsigned char Value )
 
 
     /* Wait until transmission is complete (TXE = 1 in SPI1_SR) */
-
     
+    //Added lines
+    // Wait until transmission is complete
+       while (!(SPI1->SR & SPI_SR_TXE));
+    //End of added lines
 
 }
 
@@ -386,6 +393,23 @@ void oled_config( void )
 // Don't forget to enable GPIOB clock in RCC
 // Don't forget to configure PB3/PB5 as AF0
 // Don't forget to enable SPI1 clock in RCC
+
+	//Added lines
+	// Enable GPIOB clock
+	    __HAL_RCC_GPIOB_CLK_ENABLE();
+
+	    // Configure PB3 and PB5 as Alternate Function for SPI (AF0)
+	    GPIO_InitTypeDef GPIO_InitStruct = {0};
+	    GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_5;
+	    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+	    GPIO_InitStruct.Pull = GPIO_NOPULL;
+	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	    GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	    // Enable SPI1 clock
+	    __HAL_RCC_SPI1_CLK_ENABLE();
+	//End of added lines
 
     SPI_Handle.Instance = SPI1;
 
@@ -414,6 +438,19 @@ void oled_config( void )
        - make pin PB4 = 0, wait for a few ms
        - make pin PB4 = 1, wait for a few ms
     */
+    //Added lines
+    // Reset OLED display
+       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET); // Set PB4 to low
+       for(int i=0 ; i<10000 ;i++){
+
+       }
+//       HAL_Delay(10); // Delay for reset
+       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);   // Set PB4 to high
+//       HAL_Delay(10); // Delay for reset to complete
+       for(int i=0 ; i<10000 ;i++){
+
+              }
+    //End of added lines
 
 
 //
@@ -430,7 +467,19 @@ void oled_config( void )
            set starting SEG = 0
            call oled_Write_Data( 0x00 ) 128 times
     */
-
+    //Added lines
+    // Clear the display memory
+       for (unsigned int page = 0; page < 8; page++)
+       {
+           oled_Write_Cmd(0xB0 + page); // Set page address
+           oled_Write_Cmd(0x00);        // Set column lower address
+           oled_Write_Cmd(0x10);        // Set column higher address
+           for (int col = 0; col < 128; col++)
+           {
+               oled_Write_Data(0x00);
+           }
+       }
+    //End of added lines
 
 }
 

@@ -87,27 +87,35 @@ void SystemClock48MHz( void )
 /*****************************************************************/
 
 
-int
-main(int argc, char* argv[])
-{
-
-	SystemClock48MHz();
-
-	trace_printf("This is Part 2 of Introductory Lab...\n");
-	trace_printf("System clock: %u Hz\n", SystemCoreClock);
-
-	myGPIOA_Init();		/* Initialize I/O port PA */
-	myTIM2_Init();		/* Initialize timer TIM2 */
-	myEXTI_Init();		/* Initialize EXTI */
-
-	while (1)
-	{
-		// Nothing is going on here...
-	}
-
-	return 0;
-
-}
+//int
+//main(int argc, char* argv[])
+//{
+//
+//	SystemClock48MHz();
+//
+//	trace_printf("This is Part 2 of Introductory Lab...\n");
+//	trace_printf("System clock: %u Hz\n", SystemCoreClock);
+//
+//	myGPIOA_Init();		/* Initialize I/O port PA */
+//	myTIM2_Init();		/* Initialize timer TIM2 */
+//	myEXTI_Init();		/* Initialize EXTI */
+//	//Added lines
+//	// Initialize OLED display and other peripherals
+//	oled_config();
+//	//End of added lines
+//
+//	while (1)
+//	{
+//		// Nothing is going on here...
+//		//Added lines
+//		// Refresh OLED with frequency and resistance values
+//		refresh_OLED();
+//		//End of added lines
+//	}
+//
+//	return 0;
+//
+//}
 
 
 void myGPIOA_Init()

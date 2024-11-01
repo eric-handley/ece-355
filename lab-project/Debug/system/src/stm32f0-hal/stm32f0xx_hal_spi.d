@@ -1,16 +1,15 @@
-src/main.o: ../src/main.c ../system/include/diag/Trace.h \
- ../system/include/cmsis/cmsis_device.h \
+system/src/stm32f0-hal/stm32f0xx_hal_spi.o: \
+ ../system/src/stm32f0-hal/stm32f0xx_hal_spi.c \
+ ../system/include/stm32f0-hal/stm32f0xx_hal.h \
+ ../include/stm32f0xx_hal_conf.h \
+ ../system/include/stm32f0-hal/stm32f0xx_hal_rcc.h \
+ ../system/include/stm32f0-hal/stm32f0xx_hal_def.h \
  ../system/include/cmsis/stm32f0xx.h \
  ../system/include/cmsis/stm32f051x8.h ../system/include/cmsis/core_cm0.h \
  ../system/include/cmsis/cmsis_version.h \
  ../system/include/cmsis/cmsis_compiler.h \
  ../system/include/cmsis/cmsis_gcc.h \
  ../system/include/cmsis/system_stm32f0xx.h \
- ../system/include/stm32f0-hal/stm32f0xx_hal.h \
- ../include/stm32f0xx_hal_conf.h \
- ../system/include/stm32f0-hal/stm32f0xx_hal_rcc.h \
- ../system/include/stm32f0-hal/stm32f0xx_hal_def.h \
- ../system/include/cmsis/stm32f0xx.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_rcc_ex.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_gpio.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_gpio_ex.h \
@@ -53,12 +52,15 @@ src/main.o: ../src/main.c ../system/include/diag/Trace.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_uart_ex.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_usart.h \
  ../system/include/stm32f0-hal/stm32f0xx_hal_usart_ex.h \
- ../system/include/stm32f0-hal/stm32f0xx_hal_wwdg.h \
- ../system/include/cmsis/stm32f051x8.h
+ ../system/include/stm32f0-hal/stm32f0xx_hal_wwdg.h
 
-../system/include/diag/Trace.h:
+../system/include/stm32f0-hal/stm32f0xx_hal.h:
 
-../system/include/cmsis/cmsis_device.h:
+../include/stm32f0xx_hal_conf.h:
+
+../system/include/stm32f0-hal/stm32f0xx_hal_rcc.h:
+
+../system/include/stm32f0-hal/stm32f0xx_hal_def.h:
 
 ../system/include/cmsis/stm32f0xx.h:
 
@@ -73,16 +75,6 @@ src/main.o: ../src/main.c ../system/include/diag/Trace.h \
 ../system/include/cmsis/cmsis_gcc.h:
 
 ../system/include/cmsis/system_stm32f0xx.h:
-
-../system/include/stm32f0-hal/stm32f0xx_hal.h:
-
-../include/stm32f0xx_hal_conf.h:
-
-../system/include/stm32f0-hal/stm32f0xx_hal_rcc.h:
-
-../system/include/stm32f0-hal/stm32f0xx_hal_def.h:
-
-../system/include/cmsis/stm32f0xx.h:
 
 ../system/include/stm32f0-hal/stm32f0xx_hal_rcc_ex.h:
 
@@ -169,5 +161,3 @@ src/main.o: ../src/main.c ../system/include/diag/Trace.h \
 ../system/include/stm32f0-hal/stm32f0xx_hal_usart_ex.h:
 
 ../system/include/stm32f0-hal/stm32f0xx_hal_wwdg.h:
-
-../system/include/cmsis/stm32f051x8.h:
