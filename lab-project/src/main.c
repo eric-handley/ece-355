@@ -47,6 +47,11 @@ int main(int argc, char* argv[])
 	{
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 		for(int i = 0; i < 10000; i++); 	 // Arbitrary delay before next refresh
+
+		// TODO:
+		/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
+       		- You should use TIM3 to implement this delay (e.g., via polling)
+    	*/
 	}
 
 	return 0;

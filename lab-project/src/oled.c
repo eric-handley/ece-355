@@ -1,9 +1,8 @@
-//
 // This file is part of the GNU ARM Eclipse distribution.
 // Copyright (c) 2014 Liviu Ionescu.
-//
 
-// ----------------------------------------------------------------------------
+// Contains all helper functions for setting up and 
+// writing to the OLED display through SPI
 
 #include <stdio.h>
 #include "diag/Trace.h"
@@ -13,42 +12,6 @@
 #include <stm32f0xx_hal_spi.h>
 #include <stm32f051x8.h>
 
-// ----------------------------------------------------------------------------
-//
-// STM32F0 led blink sample (trace via $(trace)).
-//
-// In debug configurations, demonstrate how to print a greeting message
-// on the trace device. In release configurations the message is
-// simply discarded.
-//
-// To demonstrate POSIX retargetting, reroute the STDOUT and STDERR to the
-// trace device and display messages on both of them.
-//
-// Then demonstrates how to blink a led with 1Hz, using a
-// continuous loop and SysTick delays.
-//
-// On DEBUG, the uptime in seconds is also displayed on the trace device.
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the $(trace) output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace_impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
-// The external clock frequency is specified as a preprocessor definition
-// passed to the compiler via a command line option (see the 'C/C++ General' ->
-// 'Paths and Symbols' -> the 'Symbols' tab, if you want to change it).
-// The value selected during project creation was HSE_VALUE=48000000.
-//
-/// Note: The default clock settings take the user defined HSE_VALUE and try
-// to reach the maximum possible system clock. For the default 8MHz input
-// the result is guaranteed, but for other values it might not be possible,
-// so please adjust the PLL settings in system/src/cmsis/system_stm32f0xx.c
-//
-
-
-// ----- main() ---------------------------------------------------------------
-
 // Sample pragmas to cope with warnings. Please note the related line at
 // the end of this function, used to pop the compiler diagnostics status.
 #pragma GCC diagnostic push
@@ -56,31 +19,15 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-
-/*** This is partial code for accessing LED Display via SPI interface. ***/
-
-
-
-
-unsigned int Freq = 0;  // Example: measured frequency value (global variable)
-unsigned int Res = 0;   // Example: measured resistance value (global variable)
-
-
 void oled_Write(unsigned char);
 void oled_Write_Cmd(unsigned char);
 void oled_Write_Data(unsigned char);
-
 void oled_config(void);
-
-void refresh_OLED(void);
-
+void refresh_OLED(uint32_t freq, uint32_t res);
 
 SPI_HandleTypeDef SPI_Handle;
 
-
-//
 // LED Display initialization commands
-//
 unsigned char oled_init_cmds[] =
 {
     0xAE,
@@ -104,13 +51,10 @@ unsigned char oled_init_cmds[] =
     0xA0
 };
 
-
-//
 // Character specifications for LED Display (1 row = 8 bytes = 1 ASCII character)
 // Example: to display '4', retrieve 8 data bytes stored in Characters[52][X] row
 //          (where X = 0, 1, ..., 7) and send them one by one to LED Display. 
 // Row number = character ASCII code (e.g., ASCII code of '4' is 0x34 = 52)
-//
 unsigned char Characters[][8] = {
     {0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,0b00000000, 0b00000000, 0b00000000},  // SPACE
     {0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000,0b00000000, 0b00000000, 0b00000000},  // SPACE
@@ -242,174 +186,96 @@ unsigned char Characters[][8] = {
     {0b00001000, 0b00011100, 0b00101010, 0b00001000, 0b00001000,0b00000000, 0b00000000, 0b00000000}   // <-
 };
 
-
-int
-main(int argc, char* argv[])
-{
-
-	SystemClock48MHz();
-
-
-
-	oled_config();
-
-	while (1)
-	{
-
-
-
-		refresh_OLED();
-	}
-}
-
-
-
-//
 // LED Display Functions
-//
-
-
-void refresh_OLED( void )
+void refresh_OLED(uint32_t freq, uint32_t res)
 {
     // Buffer size = at most 16 characters per PAGE + terminating '\0'
     unsigned char Buffer[17]; 
 
-    snprintf( Buffer, sizeof( Buffer ), "R: %5u Ohms", Res );
+    snprintf( Buffer, sizeof( Buffer ), "R: %5u Ohms", res );
+    /* Buffer now contains character ASCII codes for LED Display
+       - select PAGE (LED Display line) and set starting SEG (column)
+       - for each c = ASCII code = Buffer[0], Buffer[1], ...,
+           send 8 bytes in Characters[c][0-7] to LED Display */
+
+    write_Page(Buffer, 2);
+
+    snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", freq );
     /* Buffer now contains your character ASCII codes for LED Display
        - select PAGE (LED Display line) and set starting SEG (column)
        - for each c = ASCII code = Buffer[0], Buffer[1], ...,
-           send 8 bytes in Characters[c][0-7] to LED Display
-    */
-    //Added lines
-    oled_Write_Cmd(0xB0); // Set page address to 0
-       oled_Write_Cmd(0x00); // Set column lower address
-       oled_Write_Cmd(0x10); // Set column higher address
-       for (int i = 0; i < strlen(Buffer); i++)
-       {
-           for (int j = 0; j < 8; j++)
-           {
-               oled_Write_Data(Characters[Buffer[i] - 32][j]);
-           }
-       }
-    //End of added lines
-    
+           send 8 bytes in Characters[c][0-7] to LED Display */
 
-    // Added comment Display frequency
-    snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", Freq );
-    /* Buffer now contains your character ASCII codes for LED Display
-       - select PAGE (LED Display line) and set starting SEG (column)
-       - for each c = ASCII code = Buffer[0], Buffer[1], ...,
-           send 8 bytes in Characters[c][0-7] to LED Display
-    */
-
-    //Added lines
-    oled_Write_Cmd(0xB1); // Set page address to 1
-        oled_Write_Cmd(0x00); // Set column lower address
-        oled_Write_Cmd(0x10); // Set column higher address
-        for (int i = 0; i < strlen(Buffer); i++)
-        {
-            for (int j = 0; j < 8; j++)
-            {
-                oled_Write_Data(Characters[Buffer[i] - 32][j]);
-            }
-        }
-
-        // Delay for refresh rate (using TIM3, for example)
-        HAL_Delay(100); // 100 ms delay for ~10 frames/sec refresh rate
-    //End of added lines
-
-
-	/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
-       - You should use TIM3 to implement this delay (e.g., via polling)
-    */
-
+    write_Page(Buffer, 3);
 }
 
+void write_Page(unsigned char buffer[17], unsigned int page_n) {
+    oled_Write_Cmd(0xB0 & page_n); // Select PAGE
+
+    uint8_t i   = 0; // Current character index
+    uint8_t seg = 2; // Current SEG (column) index
+
+    while(buffer[i] != '\0') { // Iterate through characters
+        for(int j = 0; j < 8; j++) { // Iterate through columns for character i
+            uint8_t seg_low  = 0x0F & seg;
+            uint8_t seg_high = (0xF0 & seg) >> 4;
+
+            oled_Write_Cmd(0x00 | seg_low); // Select SEG lower
+            oled_Write_Cmd(0x10 | seg_high); // Select SEG upper
+
+            unsigned char col[8] = Characters[(unsigned int) buffer[i]][j];
+
+            seg++;
+        }
+        i++;
+    }
+}
 
 void oled_Write_Cmd( unsigned char cmd )
 {
-    // make PB6 = CS# = 1
-    // make PB7 = D/C# = 0
-    // make PB6 = CS# = 0
-	//Added lines
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); // D/C low for command
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); // CS low
-	//End of added lines
+    GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
+    GPIOB->BRR  |= GPIO_BRR_BR_7;  // make PB7 = D/C# = 0
+    GPIOB->BRR  |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0
+    
     oled_Write( cmd );
-    // make PB6 = CS# = 1
-    //Added lines
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
-    //End of added lines
+    
+    GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
 }
 
 void oled_Write_Data( unsigned char data )
 {
-    // make PB6 = CS# = 1
-    // make PB7 = D/C# = 1
-    // make PB6 = CS# = 0 
-	//Added lines
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);  // D/C high for data
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); // CS low
-	//End of added lines
-    oled_Write( data );
-    // make PB6 = CS# = 1
-    //Added lines
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);  // CS high
-    //End of added lines
-}
+    GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
+    GPIOB->BSRR |= GPIO_BSRR_BS_7; // make PB7 = D/C# = 1
+    GPIOB->BRR  |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0 
 
+    oled_Write( data );
+
+    GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
+}
 
 void oled_Write( unsigned char Value )
 {
-
     /* Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR) */
-
-    //Added lines
-	 // Wait until SPI is ready
-	    while (!(SPI1->SR & SPI_SR_TXE));
-	//End of added lines
+    while(SPI1->SR & SPI_SR_TXE_Pos == 0);
 
     /* Send one 8-bit character:
-       - This function also sets BIDIOE = 1 in SPI1_CR1
-    */
+       - This function also sets BIDIOE = 1 in SPI1_CR1 */
     HAL_SPI_Transmit( &SPI_Handle, &Value, 1, HAL_MAX_DELAY );
 
-
     /* Wait until transmission is complete (TXE = 1 in SPI1_SR) */
-    
-    //Added lines
-    // Wait until transmission is complete
-       while (!(SPI1->SR & SPI_SR_TXE));
-    //End of added lines
-
+    while(SPI1->SR & SPI_SR_TXE_Pos == 0);
 }
-
 
 void oled_config( void )
 {
+    RCC->AHBENR |= RCC_AHBENR_GPIOBEN; // Enable GPIOB clock in RCC
+    RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // Enable SPI1 clock in RCC
 
-// Don't forget to enable GPIOB clock in RCC
-// Don't forget to configure PB3/PB5 as AF0
-// Don't forget to enable SPI1 clock in RCC
-
-	//Added lines
-	// Enable GPIOB clock
-	    __HAL_RCC_GPIOB_CLK_ENABLE();
-
-	    // Configure PB3 and PB5 as Alternate Function for SPI (AF0)
-	    GPIO_InitTypeDef GPIO_InitStruct = {0};
-	    GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_5;
-	    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-	    GPIO_InitStruct.Pull = GPIO_NOPULL;
-	    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-	    GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
-	    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-	    // Enable SPI1 clock
-	    __HAL_RCC_SPI1_CLK_ENABLE();
-	//End of added lines
+    // PB3/PB5 in alternate function mode
+    // AF0 is default (0b0000)
+    GPIOB->MODER = 0; 
+    GPIOB->MODER |= (0b10 << GPIO_MODER_MODER3_Pos);
+    GPIOB->MODER |= (0b10 << GPIO_MODER_MODER5_Pos);
 
     SPI_Handle.Instance = SPI1;
 
@@ -422,68 +288,45 @@ void oled_config( void )
     SPI_Handle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
     SPI_Handle.Init.FirstBit = SPI_FIRSTBIT_MSB;
     SPI_Handle.Init.CRCPolynomial = 7;
-
-//
-// Initialize the SPI interface
-//
+    
+    // Initialize the SPI interface
     HAL_SPI_Init( &SPI_Handle );
-
-//
-// Enable the SPI
-//
+    
+    // Enable the SPI
     __HAL_SPI_ENABLE( &SPI_Handle );
-
 
     /* Reset LED Display (RES# = PB4):
        - make pin PB4 = 0, wait for a few ms
-       - make pin PB4 = 1, wait for a few ms
-    */
-    //Added lines
-    // Reset OLED display
-       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET); // Set PB4 to low
-       for(int i=0 ; i<10000 ;i++){
+       - make pin PB4 = 1, wait for a few ms */
+    GPIOB->BRR |= GPIO_BRR_BR_4;
+    for(unsigned int i = 0; i < 1000; i++);
+    GPIOB->BSRR |= GPIO_BSRR_BS_4;
+    for(unsigned int i = 0; i < 1000; i++);
 
-       }
-//       HAL_Delay(10); // Delay for reset
-       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);   // Set PB4 to high
-//       HAL_Delay(10); // Delay for reset to complete
-       for(int i=0 ; i<10000 ;i++){
-
-              }
-    //End of added lines
-
-
-//
-// Send initialization commands to LED Display
-//
+    // Send initialization commands to LED Display
     for ( unsigned int i = 0; i < sizeof( oled_init_cmds ); i++ )
     {
-        oled_Write_Cmd( oled_init_cmds[i] );
+        oled_Write_Cmd(oled_init_cmds[i]);
     }
-
 
     /* Fill LED Display data memory (GDDRAM) with zeros: 
        - for each PAGE = 0, 1, ..., 7
            set starting SEG = 0
-           call oled_Write_Data( 0x00 ) 128 times
-    */
-    //Added lines
-    // Clear the display memory
-       for (unsigned int page = 0; page < 8; page++)
-       {
-           oled_Write_Cmd(0xB0 + page); // Set page address
-           oled_Write_Cmd(0x00);        // Set column lower address
-           oled_Write_Cmd(0x10);        // Set column higher address
-           for (int col = 0; col < 128; col++)
-           {
-               oled_Write_Data(0x00);
-           }
-       }
-    //End of added lines
+           call oled_Write_Data( 0x00 ) 128 times */
+    for(unsigned int i = 0; i < 8; i++) {
+        oled_Write_Cmd(0xB0 | i); // Select PAGE i
 
+        for(unsigned int j = 0; j < 128; j++) {
+            uint8_t seg_low  = 0x0F & j;
+            uint8_t seg_high = (0xF0 & j) >> 4;
+
+            oled_Write_Cmd(0x00 | seg_low); // Select SEG lower
+            oled_Write_Cmd(0x10 | seg_high); // Select SEG upper
+            
+            oled_Write_Data(0x00); // Clear SEG
+        }
+    }
 }
-
-
 
 #pragma GCC diagnostic pop
 
