@@ -16,17 +16,6 @@
 #include "cmsis/cmsis_device.h"
 #include <stm32f051x8.h>
 
-// ----------------------------------------------------------------------------
-//
-// STM32F0 empty sample (trace via $(trace)).
-//
-// Trace support is enabled by adding the TRACE macro definition.
-// By default the trace messages are forwarded to the $(trace) output,
-// but can be rerouted to any device or completely suppressed, by
-// changing the definitions required in system/src/diag/trace_impl.c
-// (currently OS_USE_TRACE_ITM, OS_USE_TRACE_SEMIHOSTING_DEBUG/_STDOUT).
-//
-
 // ----- main() ---------------------------------------------------------------
 
 // Sample pragmas to cope with warnings. Please note the related line at
@@ -36,163 +25,32 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 #pragma GCC diagnostic ignored "-Wreturn-type"
 
-
-/* Definitions of registers and their bits are
-   given in system/include/cmsis/stm32f051x8.h */
-
-
-/* Clock prescaler for TIM2 timer: no prescaling */
-#define myTIM2_PRESCALER ((uint16_t)0x0000)
-/* Maximum possible setting for overflow */
-#define myTIM2_PERIOD ((uint32_t)0xFFFFFFFF)
-
-void myGPIOA_Init(void);
-void myTIM2_Init(void);
-void myEXTI_Init(void);
-
-
-// Declare/initialize your global variables here...
-// NOTE: You'll need at least one global variable
-// (say, timerTriggered = 0 or 1) to indicate
-// whether TIM2 has started counting or not.
-volatile double secondEdge = 0; // Holds the timer at the second edge
+volatile double secondEdge = 0; // Holds the value of TIM2 when second rising edge detected
 volatile uint8_t timerTriggered = 0; // Indicates if the first edge has been detected
 
-/*** Call this function to boost the STM32F0xx clock to 48 MHz ***/
-
-void SystemClock48MHz( void )
-{
-	// Disable the PLL
-	RCC->CR &= ~(RCC_CR_PLLON);
-	
-	// Wait for the PLL to unlock
-	while (( RCC->CR & RCC_CR_PLLRDY ) != 0 );
-	
-	// Configure the PLL for 48-MHz system clock
-	RCC->CFGR = 0x00280000;
-	
-	// Enable the PLL
-	RCC->CR |= RCC_CR_PLLON;
-	
-	// Wait for the PLL to lock
-	while (( RCC->CR & RCC_CR_PLLRDY ) != RCC_CR_PLLRDY );
-	
-	// Switch the processor to the PLL clock source
-	RCC->CFGR = ( RCC->CFGR & (~RCC_CFGR_SW_Msk)) | RCC_CFGR_SW_PLL;
-	
-	// Update the system with the new clock frequency
-	SystemCoreClockUpdate();
-}
+volatile uint32_t frequency = 0;  // Measured frequency value (global variable)
+volatile uint32_t resistance = 0; // Measured resistance value (global variable)
 
 /*****************************************************************/
 
-
-//int
-//main(int argc, char* argv[])
-//{
-//
-//	SystemClock48MHz();
-//
-//	trace_printf("This is Part 2 of Introductory Lab...\n");
-//	trace_printf("System clock: %u Hz\n", SystemCoreClock);
-//
-//	myGPIOA_Init();		/* Initialize I/O port PA */
-//	myTIM2_Init();		/* Initialize timer TIM2 */
-//	myEXTI_Init();		/* Initialize EXTI */
-//	//Added lines
-//	// Initialize OLED display and other peripherals
-//	oled_config();
-//	//End of added lines
-//
-//	while (1)
-//	{
-//		// Nothing is going on here...
-//		//Added lines
-//		// Refresh OLED with frequency and resistance values
-//		refresh_OLED();
-//		//End of added lines
-//	}
-//
-//	return 0;
-//
-//}
-
-
-void myGPIOA_Init()
+int main(int argc, char* argv[])
 {
-	/* Enable clock for GPIOA peripheral */
-	// Relevant register: RCC->AHBENR
-	/* Set bit 17 IOPAEN to enable port A clock */
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+	SystemClock48MHz();
 
-	/* Configure PA2 as input */
-	// Relevant register: GPIOA->MODER
-	/* Clear bits [5:4] to ensure PA2 is set for input */
-	GPIOA->MODER &= ~(GPIO_MODER_MODER4_1 | GPIO_MODER_MODER5_1); // &= 0b 1100 1111
+	GPIOA_Init();	// Initialize I/O port PA
+	TIM2_Init();	// Initialize timer TIM2
+	EXTI_Init();	// Initialize EXTI
 
-	/* Ensure no pull-up/pull-down for PA2 */
-	// Relevant register: GPIOA->PUPDR
-	GPIOA->PUPDR &= ~(GPIO_PUPDR_PUPDR4_1  | GPIO_PUPDR_PUPDR5_1 ); // &= 0b 1100 1111
+	oled_config(); 
+
+	while (1)
+	{
+		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
+		for(int i = 0; i < 10000; i++); 	 // Arbitrary delay before next refresh
+	}
+
+	return 0;
 }
-
-
-void myTIM2_Init()
-{
-	/* Enable clock for TIM2 peripheral */
-	// Relevant register: RCC->APB1ENR
-	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-
-	/* Configure TIM2: buffer auto-reload, count up, stop on overflow,
-	 * enable update events, interrupt on overflow only */
-	// Relevant register: TIM2->CR1
-	TIM2->CR1 |= (TIM_CR1_ARPE | ~TIM_CR1_DIR | TIM_CR1_OPM | ~TIM_CR1_UDIS | TIM_CR1_URS);
-
-	/* Set clock prescaler value */
-	TIM2->PSC = myTIM2_PRESCALER;
-	/* Set auto-reloaded delay */
-	TIM2->ARR = myTIM2_PERIOD;
-
-	/* Update timer registers */
-	// Relevant register: TIM2->EGR
-	TIM2->EGR |= TIM_EGR_UG;
-
-	/* Assign TIM2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[3], or use NVIC_SetPriority
-	NVIC_SetPriority(TIM2_IRQn, 0);
-
-	/* Enable TIM2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC_EnableIRQ(TIM2_IRQn);
-
-	/* Enable update interrupt generation */
-	// Relevant register: TIM2->DIER
-	TIM2->DIER |= TIM_DIER_UIE;
-}
-
-
-void myEXTI_Init()
-{
-	/* Map EXTI2 line to PA2 */
-	// Relevant register: SYSCFG->EXTICR[0]
-	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA;
-
-	/* EXTI2 line interrupts: set rising-edge trigger */
-	// Relevant register: EXTI->RTSR
-	EXTI->RTSR |= EXTI_RTSR_TR2;
-
-	/* Unmask interrupts from EXTI2 line */
-	// Relevant register: EXTI->IMR
-	EXTI->IMR |= EXTI_IMR_MR2;
-
-	/* Assign EXTI2 interrupt priority = 0 in NVIC */
-	// Relevant register: NVIC->IP[2], or use NVIC_SetPriority
-	NVIC_SetPriority(EXTI2_3_IRQn, 0);
-
-	/* Enable EXTI2 interrupts in NVIC */
-	// Relevant register: NVIC->ISER[0], or use NVIC_EnableIRQ
-	NVIC_EnableIRQ(EXTI2_3_IRQn);
-}
-
 
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void TIM2_IRQHandler()
@@ -212,7 +70,6 @@ void TIM2_IRQHandler()
 	}
 }
 
-
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void EXTI2_3_IRQHandler()
 {
@@ -230,10 +87,10 @@ void EXTI2_3_IRQHandler()
 		{
 			// Second edge detected : stop timer and calculate frequency
 			TIM2 ->CR1 &= ~(TIM_CR1_CEN); // Stop timer
-			secondEdge = TIM2->CNT ; //read TIM2 count
+			secondEdge = TIM2->CNT ; // Read TIM2 count
 
-			//calculate period and frequency
-			double period = secondEdge; //In clock cycles
+			// Calculate period and frequency
+			double period = secondEdge; // In clock cycles
 			double frequency = SystemCoreClock / secondEdge;
 
 			trace_printf("Period is %.2f cycles\n", period);
@@ -246,7 +103,6 @@ void EXTI2_3_IRQHandler()
 		EXTI->PR |= EXTI_PR_PR2;
 	}
 }
-
 
 #pragma GCC diagnostic pop
 
