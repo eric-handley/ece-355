@@ -223,7 +223,9 @@ void write_Page(unsigned char buffer[17], unsigned int page_n) {
             oled_Write_Cmd(0x00 | seg_low); // Select SEG lower
             oled_Write_Cmd(0x10 | seg_high); // Select SEG upper
 
-            unsigned char col[8] = Characters[(unsigned int) buffer[i]][j];
+            unsigned char col = Characters[(unsigned int) buffer[i]][j];
+
+            oled_Write_Data(col);
 
             seg++;
         }
