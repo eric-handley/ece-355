@@ -268,7 +268,7 @@ void oled_Write( unsigned char Value )
     while(SPI1->SR & SPI_SR_TXE_Pos == 0);
 }
 
-void oled_config( void )
+void oled_Init( void )
 {
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN; // Enable GPIOB clock in RCC
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN; // Enable SPI1 clock in RCC

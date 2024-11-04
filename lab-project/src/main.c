@@ -1,7 +1,5 @@
-//
 // This file is part of the GNU ARM Eclipse distribution.
 // Copyright (c) 2014 Liviu Ionescu.
-//
 
 // ----------------------------------------------------------------------------
 // School: University of Victoria, Canada.
@@ -16,8 +14,6 @@
 #include "cmsis/cmsis_device.h"
 #include <stm32f051x8.h>
 
-// ----- main() ---------------------------------------------------------------
-
 // Sample pragmas to cope with warnings. Please note the related line at
 // the end of this function, used to pop the compiler diagnostics status.
 #pragma GCC diagnostic push
@@ -31,27 +27,23 @@ volatile uint8_t timerTriggered = 0; // Indicates if the first edge has been det
 volatile uint32_t frequency = 0;  // Measured frequency value (global variable)
 volatile uint32_t resistance = 0; // Measured resistance value (global variable)
 
-/*****************************************************************/
-
 int main(int argc, char* argv[])
 {
 	SystemClock48MHz();
 
 	GPIOA_Init();	// Initialize I/O port PA
-	TIM2_Init();	// Initialize timer TIM2
+	TIM2_Init();	// Initialize timer TIM2 - signal edge counter
+	TIM3_Init();	// Initialize timer TIM3 - display refresh rate counter
 	EXTI_Init();	// Initialize EXTI
 
-	oled_config(); 
+	oled_Init();    // Initialize OLED setup, including I/O port PB
 
 	while (1)
 	{
+		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate 
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
-		for(int i = 0; i < 10000; i++); 	 // Arbitrary delay before next refresh
 
-		// TODO:
-		/* Wait for ~100 ms (for example) to get ~10 frames/sec refresh rate 
-       		- You should use TIM3 to implement this delay (e.g., via polling)
-    	*/
+		while(~(TIM3->SR & TIM_SR_UIF_Msk)); // While TIM3 not zero (UIF not set)
 	}
 
 	return 0;
@@ -60,52 +52,37 @@ int main(int argc, char* argv[])
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void TIM2_IRQHandler()
 {
-	/* Check if update interrupt flag is indeed set */
-	if ((TIM2->SR & TIM_SR_UIF) != 0)
+	if ((TIM2->SR & TIM_SR_UIF) != 0) // Check if update interrupt flag is indeed set
 	{
 		trace_printf("\n*** Overflow! ***\n");
 
-		/* Clear update interrupt flag */
-		// Relevant register: TIM2->SR
-		TIM2->SR &= ~TIM_SR_UIF;
-
-		/* Restart stopped timer */
-		// Relevant register: TIM2->CR1
-		TIM2->CR1 |= TIM_CR1_CEN;
+		TIM2->SR &= ~TIM_SR_UIF; // Clear update interrupt flag 
+		TIM2->CR1 |= TIM_CR1_CEN; // Restart stopped timer
 	}
 }
 
 /* This handler is declared in system/src/cmsis/vectors_stm32f051x8.c */
 void EXTI2_3_IRQHandler()
 {
-	/* Check if EXTI2 interrupt pending flag is indeed set */
-	if ((EXTI->PR & EXTI_PR_PR2) != 0)
+	if ((EXTI->PR & EXTI_PR_PR2) != 0) // Check if EXTI2 interrupt pending flag is indeed set
 	{
-		// Iff first edge of square wave, start timer
-		if (timerTriggered == 0)
+		if (timerTriggered == 0) // Iff first edge of square wave, start timer
 		{
 			TIM2->CNT = 0;
 			TIM2->CR1 |= TIM_CR1_CEN;
 			timerTriggered = 1;
 		}
-		else
+		else // Second edge detected : stop timer and calculate frequency
 		{
-			// Second edge detected : stop timer and calculate frequency
 			TIM2 ->CR1 &= ~(TIM_CR1_CEN); // Stop timer
 			secondEdge = TIM2->CNT ; // Read TIM2 count
 
-			// Calculate period and frequency
-			double period = secondEdge; // In clock cycles
-			double frequency = SystemCoreClock / secondEdge;
-
-			trace_printf("Period is %.2f cycles\n", period);
-			trace_printf("Frequency is %.2f Hz \n", frequency);
+			frequency = SystemCoreClock / secondEdge; // Calculate frequency, set global var frequency
 
 			timerTriggered = 0;
 		}
 
-		// Clear EXTI2 interrupt pending flag
-		EXTI->PR |= EXTI_PR_PR2;
+		EXTI->PR |= EXTI_PR_PR2; // Clear EXTI2 interrupt pending flag
 	}
 }
 
