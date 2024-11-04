@@ -24,6 +24,9 @@
 volatile unsigned int frequency = 0;  // Measured frequency value (global variable)
 volatile unsigned int resistance = 0; // Measured resistance value (global variable)
 
+void poll_Potentiometer(void);
+void start_ADC(void);
+
 int main(int argc, char* argv[])
 {
 	SystemClock48MHz();
@@ -41,7 +44,10 @@ int main(int argc, char* argv[])
 		// 1. Poll poten. on PA5
 		// 2. Move into ADC and start conversion
 		// 	- ADC interrupt will handle DAC and output to circuit
-
+		
+		poll_Potentiometer();
+		start_ADC();
+		
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 
 		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate 
@@ -49,6 +55,18 @@ int main(int argc, char* argv[])
 	}
 
 	return 0;
+}
+
+// Polls potentiometer (input PA5) and calculates resistance value
+void poll_Potentiometer() 
+{
+	// TODO
+}
+
+// Moves resistance value into ADC and starts conversion process
+void start_ADC() 
+{
+	// TODO
 }
 
 #pragma GCC diagnostic pop
