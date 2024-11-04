@@ -57,15 +57,15 @@ void EXTI2_3_IRQHandler()
 // Will need to configure EXTI, PADIR differently in setup.c
 
 // When ADC is finished, moves output into DAC and starts conversion
-void ADC1_IRQHandler() 
-{
-	// TODO
-}
-
+//void ADC1_IRQHandler()
+//{
+// TODO
+//}
+//
 // When DAC is finished, moves output into PA4 output (to 4n35)
-void ADC1_IRQHandler() 
-{
-	// TODO
-}
+//void ADC1_IRQHandler()
+//{
+// TODO
+//}
 
 #pragma GCC diagnostic pop

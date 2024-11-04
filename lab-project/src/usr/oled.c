@@ -23,7 +23,8 @@ void oled_Write(unsigned char);
 void oled_Write_Cmd(unsigned char);
 void oled_Write_Data(unsigned char);
 void oled_config(void);
-void refresh_OLED(uint32_t freq, uint32_t res);
+void refresh_OLED(unsigned int freq, unsigned int res);
+void write_Page(unsigned char buffer[17], unsigned int page_n);
 
 SPI_HandleTypeDef SPI_Handle;
 
@@ -187,7 +188,7 @@ unsigned char Characters[][8] = {
 };
 
 // LED Display Functions
-void refresh_OLED(uint32_t freq, uint32_t res)
+void refresh_OLED(unsigned int freq, unsigned int res)
 {
     // Buffer size = at most 16 characters per PAGE + terminating '\0'
     unsigned char Buffer[17]; 
@@ -213,9 +214,10 @@ void write_Page(unsigned char buffer[17], unsigned int page_n) {
     oled_Write_Cmd(0xB0 & page_n); // Select PAGE
 
     uint8_t i   = 0; // Current character index
-    uint8_t seg = 2; // Current SEG (column) index
+    uint8_t seg = 3; // Current SEG (column) index
 
     while(buffer[i] != '\0') { // Iterate through characters
+//    	trace_printf("\n%c\n\n", buffer[i]);
         for(int j = 0; j < 8; j++) { // Iterate through columns for character i
             uint8_t seg_low  = 0x0F & seg;
             uint8_t seg_high = (0xF0 & seg) >> 4;
@@ -224,6 +226,7 @@ void write_Page(unsigned char buffer[17], unsigned int page_n) {
             oled_Write_Cmd(0x10 | seg_high); // Select SEG upper
 
             unsigned char col = Characters[(unsigned int) buffer[i]][j];
+//            trace_printf("0x%08x\n", col);
 
             oled_Write_Data(col);
 
@@ -236,8 +239,8 @@ void write_Page(unsigned char buffer[17], unsigned int page_n) {
 void oled_Write_Cmd( unsigned char cmd )
 {
     GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
-    GPIOB->BRR  |= GPIO_BRR_BR_7;  // make PB7 = D/C# = 0
-    GPIOB->BRR  |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0
+    GPIOB->BRR |= GPIO_BRR_BR_7;  // make PB7 = D/C# = 0
+    GPIOB->BRR |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0
     
     oled_Write( cmd );
     
@@ -248,7 +251,7 @@ void oled_Write_Data( unsigned char data )
 {
     GPIOB->BSRR |= GPIO_BSRR_BS_6; // make PB6 = CS# = 1
     GPIOB->BSRR |= GPIO_BSRR_BS_7; // make PB7 = D/C# = 1
-    GPIOB->BRR  |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0 
+    GPIOB->BRR |= GPIO_BRR_BR_6;  // make PB6 = CS# = 0
 
     oled_Write( data );
 
@@ -258,14 +261,14 @@ void oled_Write_Data( unsigned char data )
 void oled_Write( unsigned char Value )
 {
     /* Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR) */
-    while(SPI1->SR & SPI_SR_TXE_Pos == 0);
+    while((SPI1->SR & SPI_SR_TXE_Msk) == 0);
 
     /* Send one 8-bit character:
        - This function also sets BIDIOE = 1 in SPI1_CR1 */
     HAL_SPI_Transmit( &SPI_Handle, &Value, 1, HAL_MAX_DELAY );
 
     /* Wait until transmission is complete (TXE = 1 in SPI1_SR) */
-    while(SPI1->SR & SPI_SR_TXE_Pos == 0);
+    while((SPI1->SR & SPI_SR_TXE_Msk) == 0);
 }
 
 void oled_Init( void )
@@ -279,8 +282,12 @@ void oled_Init( void )
     GPIOB->MODER |= (0b10 << GPIO_MODER_MODER3_Pos);
     GPIOB->MODER |= (0b10 << GPIO_MODER_MODER5_Pos);
 
-    SPI_Handle.Instance = SPI1;
+    // PB4/6/7 in general purpose output mode
+    GPIOB->MODER |= (0b01 << GPIO_MODER_MODER4_Pos);
+    GPIOB->MODER |= (0b01 << GPIO_MODER_MODER6_Pos);
+    GPIOB->MODER |= (0b01 << GPIO_MODER_MODER7_Pos);
 
+    SPI_Handle.Instance = SPI1;
     SPI_Handle.Init.Direction = SPI_DIRECTION_1LINE;
     SPI_Handle.Init.Mode = SPI_MODE_MASTER;
     SPI_Handle.Init.DataSize = SPI_DATASIZE_8BIT;
@@ -301,9 +308,9 @@ void oled_Init( void )
        - make pin PB4 = 0, wait for a few ms
        - make pin PB4 = 1, wait for a few ms */
     GPIOB->BRR |= GPIO_BRR_BR_4;
-    for(unsigned int i = 0; i < 1000; i++);
+    for(unsigned int i = 0; i < 10000; i++);
     GPIOB->BSRR |= GPIO_BSRR_BS_4;
-    for(unsigned int i = 0; i < 1000; i++);
+    for(unsigned int i = 0; i < 10000; i++);
 
     // Send initialization commands to LED Display
     for ( unsigned int i = 0; i < sizeof( oled_init_cmds ); i++ )

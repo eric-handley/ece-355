@@ -27,6 +27,15 @@ volatile unsigned int resistance = 0; // Measured resistance value (global varia
 void poll_Potentiometer(void);
 void start_ADC(void);
 
+extern void SystemClock48MHz();
+extern void GPIOA_Init();
+extern void TIM2_Init();
+extern void TIM3_Init();
+extern void TIM3_Reset();
+extern void EXTI_Init();
+extern void oled_Init();
+extern void refresh_OLED();
+
 int main(int argc, char* argv[])
 {
 	SystemClock48MHz();
@@ -51,7 +60,8 @@ int main(int argc, char* argv[])
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 
 		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate 
-		while(~(TIM3->SR & TIM_SR_UIF_Msk)); // While TIM3 not zero (UIF not set)
+//		while(~(TIM3->SR & TIM_SR_UIF_Msk)); // While TIM3 not zero (UIF not set)
+		while(TIM3->CNT > 0);
 	}
 
 	return 0;

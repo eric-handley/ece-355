@@ -5,22 +5,16 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../src/initialize-hardware.c \
-../src/main.c \
-../src/oled.c \
 ../src/stm32f0xx_hal_msp.c \
 ../src/write.c 
 
 C_DEPS += \
 ./src/initialize-hardware.d \
-./src/main.d \
-./src/oled.d \
 ./src/stm32f0xx_hal_msp.d \
 ./src/write.d 
 
 OBJS += \
 ./src/initialize-hardware.o \
-./src/main.o \
-./src/oled.o \
 ./src/stm32f0xx_hal_msp.o \
 ./src/write.o 
 
