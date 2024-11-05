@@ -51,6 +51,26 @@ void DAC_Init()
 	DAC->CR |= DAC_CR_EN1; // Enable DAC out for PA4
 }
 
+void ADC_Init()
+{
+	RCC->APB2ENR |= RCC_APB2ENR_ADCEN; // RCC clock enable for ADC
+
+	ADC1->IER |= ADC_IER_EOCIE; // End-of-conversion interrupt enable
+
+	ADC1->CR |= ADC_CR_ADCAL; // Start ADC calibration
+	while(ADC1->CR & ADC_CR_ADCAL_Msk); // Wait until calibration not in progress
+
+	ADC1->CFGR1 |= ADC_CFGR1_CONT; // Enable continuous conversion mode
+	ADC1->CR |= ADC_CR_ADEN; // ADC enable
+	ADC1->CR |= ADC_CR_ADSTART; // ADC start
+}
+
+void DAC_Init()
+{
+	RCC-> APB1ENR |= RCC_APB1ENR_DACEN; // RCC clock enable for DAC
+	DAC->CR |= DAC_CR_EN1; // Enable DAC out for PA4
+}
+
 void GPIOA_Init() // TODO: Setup all other PA pins
 {
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;                              // Enable clock for GPIOA peripheral
