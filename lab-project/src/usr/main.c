@@ -56,12 +56,14 @@ int main(int argc, char* argv[])
 		
 		poll_Potentiometer();
 		start_ADC();
+		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate
 		
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 
-		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate 
 //		while(~(TIM3->SR & TIM_SR_UIF_Msk)); // While TIM3 not zero (UIF not set)
-		while(TIM3->CNT > 0);
+		while(TIM3->CR1 & TIM_CR1_CEN);
+		frequency++;
+		resistance++;
 	}
 
 	return 0;

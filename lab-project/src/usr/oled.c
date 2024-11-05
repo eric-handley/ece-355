@@ -199,7 +199,7 @@ void refresh_OLED(unsigned int freq, unsigned int res)
        - for each c = ASCII code = Buffer[0], Buffer[1], ...,
            send 8 bytes in Characters[c][0-7] to LED Display */
 
-    write_Page(Buffer, 2);
+    write_Page(Buffer, 1);
 
     snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", freq );
     /* Buffer now contains your character ASCII codes for LED Display
@@ -211,10 +211,10 @@ void refresh_OLED(unsigned int freq, unsigned int res)
 }
 
 void write_Page(unsigned char buffer[17], unsigned int page_n) {
-    oled_Write_Cmd(0xB0 & page_n); // Select PAGE
+    oled_Write_Cmd(0xB0 | page_n); // Select PAGE
 
     uint8_t i   = 0; // Current character index
-    uint8_t seg = 3; // Current SEG (column) index
+    uint8_t seg = 2; // Current SEG (column) index
 
     while(buffer[i] != '\0') { // Iterate through characters
 //    	trace_printf("\n%c\n\n", buffer[i]);
@@ -325,7 +325,7 @@ void oled_Init( void )
     for(unsigned int i = 0; i < 8; i++) {
         oled_Write_Cmd(0xB0 | i); // Select PAGE i
 
-        for(unsigned int j = 0; j < 128; j++) {
+        for(unsigned int j = 2; j < 130; j++) {
             uint8_t seg_low  = 0x0F & j;
             uint8_t seg_high = (0xF0 & j) >> 4;
 

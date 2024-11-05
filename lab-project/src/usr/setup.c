@@ -59,14 +59,14 @@ void TIM2_Init()
 void TIM3_Init()
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM3EN; // Enable clock for TIM3 peripheral
-    TIM3->CR1 |= TIM_CR1_DIR;           // Downcounter mode, UEV enabled (UIF set when TIM reaches 0)
+    TIM3->CR1 |= TIM_CR1_DIR | TIM_CR1_OPM;           // Downcounter mode, UEV enabled (UIF set when TIM reaches 0)
 }
 
 void TIM3_Reset()
 {
-    TIM3->SR &= ~TIM_SR_UIF_Msk; // Clear UIF
-    TIM3->PSC = 4800000;         // 100ms at 48MHz
-    TIM3->CR1 |= TIM_CR1_CEN;    // Start timer
+    TIM3->SR &= ~TIM_SR_UIF_Msk;       // Clear UIF
+    TIM3->CNT = SystemCoreClock * 0.1; // 100ms at 48MHz
+    TIM3->CR1 |= TIM_CR1_CEN;    	   // Start timer
 }
 
 void EXTI_Init()
