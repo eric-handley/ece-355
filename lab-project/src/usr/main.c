@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 {
 	SystemClock48MHz();
 
-	GPIOA_Init();	// Initialize I/O port PA
+	GPIOA_Init();	// Initialize I/O port PA, along with ADC and DAC
 	TIM2_Init();	// Initialize timer TIM2 - signal edge counter
 	TIM3_Init();	// Initialize timer TIM3 - display refresh rate counter
 	EXTI_Init();	// Initialize EXTI
@@ -56,14 +56,14 @@ int main(int argc, char* argv[])
 		
 		poll_Potentiometer();
 		start_ADC();
+
+		 trace_printf("0x%08x\n", ADC1->DR);
+
 		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate
 		
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 
-//		while(~(TIM3->SR & TIM_SR_UIF_Msk)); // While TIM3 not zero (UIF not set)
-		while(TIM3->CR1 & TIM_CR1_CEN);
-		frequency++;
-		resistance++;
+		while(TIM3->CR1 & TIM_CR1_CEN); // While TIM3 not zero (CEN not reset)
 	}
 
 	return 0;

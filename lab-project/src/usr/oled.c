@@ -194,18 +194,18 @@ void refresh_OLED(unsigned int freq, unsigned int res)
     unsigned char Buffer[17]; 
 
     snprintf( Buffer, sizeof( Buffer ), "R: %5u Ohms", res );
-    /* Buffer now contains character ASCII codes for LED Display
-       - select PAGE (LED Display line) and set starting SEG (column)
-       - for each c = ASCII code = Buffer[0], Buffer[1], ...,
-           send 8 bytes in Characters[c][0-7] to LED Display */
+    // Buffer now contains character ASCII codes for LED Display
+    // - select PAGE (LED Display line) and set starting SEG (column)
+    // - for each c = ASCII code = Buffer[0], Buffer[1], ...,
+    //     send 8 bytes in Characters[c][0-7] to LED Display
 
     write_Page(Buffer, 1);
 
     snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", freq );
-    /* Buffer now contains your character ASCII codes for LED Display
-       - select PAGE (LED Display line) and set starting SEG (column)
-       - for each c = ASCII code = Buffer[0], Buffer[1], ...,
-           send 8 bytes in Characters[c][0-7] to LED Display */
+    // Buffer now contains your character ASCII codes for LED Display
+    // - select PAGE (LED Display line) and set starting SEG (column)
+    // - for each c = ASCII code = Buffer[0], Buffer[1], ...,
+    //     send 8 bytes in Characters[c][0-7] to LED Display
 
     write_Page(Buffer, 3);
 }
@@ -216,17 +216,15 @@ void write_Page(unsigned char buffer[17], unsigned int page_n) {
     uint8_t i   = 0; // Current character index
     uint8_t seg = 2; // Current SEG (column) index
 
-    while(buffer[i] != '\0') { // Iterate through characters
-//    	trace_printf("\n%c\n\n", buffer[i]);
-        for(int j = 0; j < 8; j++) { // Iterate through columns for character i
+    while(buffer[i] != '\0') { 		 		// Iterate through characters
+        for(int j = 0; j < 8; j++) { 		// Iterate through columns for character i
             uint8_t seg_low  = 0x0F & seg;
             uint8_t seg_high = (0xF0 & seg) >> 4;
 
-            oled_Write_Cmd(0x00 | seg_low); // Select SEG lower
+            oled_Write_Cmd(0x00 | seg_low);  // Select SEG lower
             oled_Write_Cmd(0x10 | seg_high); // Select SEG upper
 
             unsigned char col = Characters[(unsigned int) buffer[i]][j];
-//            trace_printf("0x%08x\n", col);
 
             oled_Write_Data(col);
 
@@ -260,15 +258,9 @@ void oled_Write_Data( unsigned char data )
 
 void oled_Write( unsigned char Value )
 {
-    /* Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR) */
-    while((SPI1->SR & SPI_SR_TXE_Msk) == 0);
-
-    /* Send one 8-bit character:
-       - This function also sets BIDIOE = 1 in SPI1_CR1 */
-    HAL_SPI_Transmit( &SPI_Handle, &Value, 1, HAL_MAX_DELAY );
-
-    /* Wait until transmission is complete (TXE = 1 in SPI1_SR) */
-    while((SPI1->SR & SPI_SR_TXE_Msk) == 0);
+    while((SPI1->SR & SPI_SR_TXE_Msk) == 0); 				   // Wait until SPI1 is ready for writing (TXE = 1 in SPI1_SR)
+    HAL_SPI_Transmit( &SPI_Handle, &Value, 1, HAL_MAX_DELAY ); // Send one 8-bit character, also sets BIDIOE
+    while((SPI1->SR & SPI_SR_TXE_Msk) == 0); 				   // Wait until transmission is complete (TXE = 1 in SPI1_SR)
 }
 
 void oled_Init( void )
@@ -298,15 +290,13 @@ void oled_Init( void )
     SPI_Handle.Init.FirstBit = SPI_FIRSTBIT_MSB;
     SPI_Handle.Init.CRCPolynomial = 7;
     
-    // Initialize the SPI interface
-    HAL_SPI_Init( &SPI_Handle );
+    HAL_SPI_Init( &SPI_Handle );     // Initialize the SPI interface
     
-    // Enable the SPI
-    __HAL_SPI_ENABLE( &SPI_Handle );
+    __HAL_SPI_ENABLE( &SPI_Handle ); // Enable the SPI
 
-    /* Reset LED Display (RES# = PB4):
-       - make pin PB4 = 0, wait for a few ms
-       - make pin PB4 = 1, wait for a few ms */
+    // Reset LED Display (RES# = PB4):
+    // - make pin PB4 = 0, wait for a few ms
+    // - make pin PB4 = 1, wait for a few ms
     GPIOB->BRR |= GPIO_BRR_BR_4;
     for(unsigned int i = 0; i < 10000; i++);
     GPIOB->BSRR |= GPIO_BSRR_BS_4;
@@ -318,10 +308,10 @@ void oled_Init( void )
         oled_Write_Cmd(oled_init_cmds[i]);
     }
 
-    /* Fill LED Display data memory (GDDRAM) with zeros: 
-       - for each PAGE = 0, 1, ..., 7
-           set starting SEG = 0
-           call oled_Write_Data( 0x00 ) 128 times */
+    // Fill LED Display data memory (GDDRAM) with zeros:
+    // - for each PAGE = 0, 1, ..., 7
+    //     set starting SEG = 0
+    //     call oled_Write_Data( 0x00 ) 128 times
     for(unsigned int i = 0; i < 8; i++) {
         oled_Write_Cmd(0xB0 | i); // Select PAGE i
 
@@ -338,5 +328,3 @@ void oled_Init( void )
 }
 
 #pragma GCC diagnostic pop
-
-// ----------------------------------------------------------------------------
