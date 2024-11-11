@@ -24,8 +24,8 @@
 volatile unsigned int frequency = 0;  // Measured frequency value (global variable)
 volatile unsigned int resistance = 0; // Measured resistance value (global variable)
 
-void poll_Potentiometer(void);
-void start_ADC(void);
+void poll_ADC(void);
+void start_DAC(void);
 
 extern void SystemClock48MHz();
 extern void GPIOA_Init();
@@ -49,17 +49,10 @@ int main(int argc, char* argv[])
 
 	while (1)
 	{
-		// TODO in main:
-		// 1. Poll poten. on PA5
-		// 2. Move into ADC and start conversion
-		// 	- ADC interrupt will handle DAC and output to circuit
-		
-		poll_Potentiometer();
-		start_ADC();
-
-		 trace_printf("0x%08x\n", ADC1->DR);
-
 		TIM3_Reset(); // Sets TIM3 for ~100 ms to get ~10 frames/sec refresh rate
+		
+		poll_ADC();
+		start_DAC();
 		
 		refresh_OLED(frequency, resistance); // Refresh OLED with frequency and resistance values
 
@@ -69,15 +62,19 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-// Polls potentiometer (input PA5) and calculates resistance value
-void poll_Potentiometer() 
+// Polls ADC (input PA5) and calculates resistance value if conversion is done
+void poll_ADC() 
 {
-	// TODO
+	if(ADC1->ISR & ADC_ISR_ADRDY_Msk) {
+		ADC1->CR |= ADC_CR_ADSTART;
+	}
+
+	if(ADC1->ISR & ADC_ISR_EOC_Msk) {
+		resistance = ((float)(ADC1->DR) / 4095) * 5000;
+	}
 }
 
-// Moves resistance value into ADC and starts conversion process
-void start_ADC() 
-{
+void start_DAC() {
 	// TODO
 }
 

@@ -35,34 +35,16 @@ void ADC_Init()
 {
 	RCC->APB2ENR |= RCC_APB2ENR_ADCEN; // RCC clock enable for ADC
 
-	ADC1->IER |= ADC_IER_EOCIE; // End-of-conversion interrupt enable
+	ADC1->CHSELR = ADC_CHSELR_CHSEL5; // Select channel 5 (PA5)
+	ADC1->SMPR = 0b111; // Set sampling rate to max
 
-	ADC1->CR |= ADC_CR_ADCAL; // Start ADC calibration
-	while(ADC1->CR & ADC_CR_ADCAL_Msk); // Wait until calibration not in progress
+	NVIC_EnableIRQ(ADC1_IRQn);
 
-	ADC1->CFGR1 |= ADC_CFGR1_CONT; // Enable continuous conversion mode
 	ADC1->CR |= ADC_CR_ADEN; // ADC enable
-	ADC1->CR |= ADC_CR_ADSTART; // ADC start
-}
 
-void DAC_Init()
-{
-	RCC-> APB1ENR |= RCC_APB1ENR_DACEN; // RCC clock enable for DAC
-	DAC->CR |= DAC_CR_EN1; // Enable DAC out for PA4
-}
+	while((ADC1->ISR & ADC_ISR_ADRDY_Msk) == 0); // Wait until ADC ready
 
-void ADC_Init()
-{
-	RCC->APB2ENR |= RCC_APB2ENR_ADCEN; // RCC clock enable for ADC
-
-	ADC1->IER |= ADC_IER_EOCIE; // End-of-conversion interrupt enable
-
-	ADC1->CR |= ADC_CR_ADCAL; // Start ADC calibration
-	while(ADC1->CR & ADC_CR_ADCAL_Msk); // Wait until calibration not in progress
-
-	ADC1->CFGR1 |= ADC_CFGR1_CONT; // Enable continuous conversion mode
-	ADC1->CR |= ADC_CR_ADEN; // ADC enable
-	ADC1->CR |= ADC_CR_ADSTART; // ADC start
+	ADC1->CR |= ADC_CR_ADSTART; // Start ADC
 }
 
 void DAC_Init()
@@ -73,13 +55,11 @@ void DAC_Init()
 
 void GPIOA_Init() // TODO: Setup all other PA pins
 {
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;                              // Enable clock for GPIOA peripheral
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN; // Enable clock for GPIOA peripheral
 
-	// TODO: Figure out why this line crashes the whole board????
-	// GPIOA->MODER = (0b11 << GPIO_MODER_MODER4_Pos);				// Configure PA dir - all in except PA4 (analog out)
+	GPIOA->MODER |= (0b11 << GPIO_MODER_MODER4_Pos) | (0b11 << GPIO_MODER_MODER5_Pos); // Configure PA dir - all in except PA4, PA5
 
-
-	 ADC_Init();
+	ADC_Init();
 	// DAC_Init();
 }
 
