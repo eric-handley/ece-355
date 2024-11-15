@@ -60,7 +60,7 @@ void GPIOA_Init() // TODO: Setup all other PA pins
 	GPIOA->MODER |= (0b11 << GPIO_MODER_MODER4_Pos) | (0b11 << GPIO_MODER_MODER5_Pos); // Configure PA dir - all in except PA4, PA5
 
 	ADC_Init();
-	// DAC_Init();
+	DAC_Init();
 }
 
 void TIM2_Init()
@@ -96,11 +96,20 @@ void TIM3_Reset()
 
 void EXTI_Init()
 {
-	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA; // Map EXTI2 line to PA2
+	// SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA; // Map EXTI2 line to PA2
 
-	EXTI->RTSR |= EXTI_RTSR_TR2; // EXTI2 line interrupts: set rising-edge trigger
-	EXTI->IMR |= EXTI_IMR_MR2;   // Unmask interrupts from EXTI2 line
+	// EXTI->RTSR |= EXTI_RTSR_TR2; // EXTI2 line interrupts: set rising-edge trigger
+	// EXTI->IMR |= EXTI_IMR_MR2;   // Unmask interrupts from EXTI2 line
 	
-    NVIC_SetPriority(EXTI2_3_IRQn, 0); // Assign EXTI2 interrupt priority = 0 in NVIC
-	NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2 interrupts in NVIC
+    // NVIC_SetPriority(EXTI2_3_IRQn, 0); // Assign EXTI2 interrupt priority = 0 in NVIC
+	// NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2 interrupts in NVIC
+}
+
+void configure_IO(){
+	SystemClock48MHz();
+
+	GPIOA_Init();	// Initialize I/O port PA, along with ADC and DAC
+	TIM2_Init();	// Initialize timer TIM2 - signal edge counter
+	TIM3_Init();	// Initialize timer TIM3 - display refresh rate counter
+	EXTI_Init();	// Initialize EXTI
 }
