@@ -44,24 +44,19 @@ Example wiring:
 
 - Poll potentiometer on PA5
 - Move into ADC, start conversion 
+- If ADC conversion is done, update resistance and send to DAC
+   - Output is automatically sent to PA4 output by DAC configuration
 - Grab Ohm/Hz values from global vars and send to LED screen
 - Small delay for screen refresh rate of ~10Hz
 
 ### Interrupts
 
 - PA0: User button
-   - Toggles between interrupt source for frequency calculation
+   - Toggles between interrupt source for frequency calculation (on falling edge of button press)
 - PA1: NE555 Circuit
-   - Calculates frequency based on cycles since last interrupt.
+   - Calculates frequency based on cycles since last interrupt, if this input is selected
 - PA2: Function Generator
-   - Should activate same interrupt as PA1
-- ???: ADC
-   - Interrupt when AD conversion is done. 
-   - Move output into global vars (for SPI) and into DAC (for NE555)
-   - Start DA conversion
-- ???: DAC
-   - Interrupt when DA conversion is done
-   - Move output into PA4 for NE555
+   - Should activate same interrupt as PA1, again only if selected
 
 #### Toggling Between Function Sources
 
