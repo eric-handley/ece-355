@@ -36,21 +36,19 @@ void ADC_Init()
 	RCC->APB2ENR |= RCC_APB2ENR_ADCEN; // RCC clock enable for ADC
 
 	ADC1->CHSELR = ADC_CHSELR_CHSEL5; // Select channel 5 (PA5)
-	ADC1->SMPR = 0b111; // Set sampling rate to max
+	ADC1->SMPR = 0b111;               // Set sampling rate to max
 
 	NVIC_EnableIRQ(ADC1_IRQn);
 
-	ADC1->CR |= ADC_CR_ADEN; // ADC enable
-
+	ADC1->CR |= ADC_CR_ADEN;                     // ADC enable
 	while((ADC1->ISR & ADC_ISR_ADRDY_Msk) == 0); // Wait until ADC ready
-
-	ADC1->CR |= ADC_CR_ADSTART; // Start ADC
+	ADC1->CR |= ADC_CR_ADSTART;                  // Start ADC
 }
 
 void DAC_Init()
 {
 	RCC-> APB1ENR |= RCC_APB1ENR_DACEN; // RCC clock enable for DAC
-	DAC->CR |= DAC_CR_EN1; // Enable DAC out for PA4
+	DAC->CR |= DAC_CR_EN1;              // Enable DAC out for PA4
 }
 
 void GPIOA_Init()
@@ -114,7 +112,7 @@ void EXTI2_3_Init()
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI2_PA; // Map line 2/3 to PA2
 
 	EXTI->RTSR |= EXTI_RTSR_TR2; 	// EXTI2 line interrupts: set rising-edge trigger
-	// EXTI->IMR |= EXTI_IMR_MR2; 	// Commented - do /not/ unmask EXTI2 interrupts
+	// EXTI->IMR |= EXTI_IMR_MR2; 	// Do /not/ unmask EXTI2 interrupts (not initial freq. source)
 	
     NVIC_SetPriority(EXTI2_3_IRQn, 0); // Assign EXTI2_3 interrupt priority = 0 in NVIC
 	NVIC_EnableIRQ(EXTI2_3_IRQn);      // Enable EXTI2_3 interrupts in NVIC

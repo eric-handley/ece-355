@@ -51,6 +51,7 @@ int main(int argc, char* argv[])
 }
 
 // Polls ADC (input PA5) and calculates resistance value if conversion is done
+// Also places input into DAC for conversion and output on PA4
 void poll_Potentiometer() 
 {
 	if(ADC1->ISR & ADC_ISR_ADRDY_Msk) {
