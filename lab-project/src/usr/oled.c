@@ -193,7 +193,7 @@ void refresh_OLED(unsigned int freq, unsigned int res)
     // Buffer size = at most 16 characters per PAGE + terminating '\0'
     unsigned char Buffer[17]; 
 
-    snprintf( Buffer, sizeof( Buffer ), "R: %5u Ohms", res );
+    snprintf( Buffer, sizeof( Buffer ), "R: %5u Ohms  ", res );
     // Buffer now contains character ASCII codes for LED Display
     // - select PAGE (LED Display line) and set starting SEG (column)
     // - for each c = ASCII code = Buffer[0], Buffer[1], ...,
@@ -201,7 +201,7 @@ void refresh_OLED(unsigned int freq, unsigned int res)
 
     write_Page(Buffer, 1);
 
-    snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz", freq );
+    snprintf( Buffer, sizeof( Buffer ), "F: %5u Hz  ", freq );
     // Buffer now contains your character ASCII codes for LED Display
     // - select PAGE (LED Display line) and set starting SEG (column)
     // - for each c = ASCII code = Buffer[0], Buffer[1], ...,

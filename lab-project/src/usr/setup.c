@@ -103,7 +103,7 @@ void EXTI0_1_Init()
 	EXTI->RTSR |= EXTI_RTSR_TR1; // EXTI1 line interrupts: set rising-edge trigger
 	EXTI->IMR |= EXTI_IMR_MR1;   // Unmask EXTI1 line interrupts
 
-	NVIC_SetPriority(EXTI0_1_IRQn, 0); // Assign EXTI0_1 interrupt priority = 0 in NVIC
+	NVIC_SetPriority(EXTI0_1_IRQn, 1); // Assign EXTI0_1 interrupt priority = 0 in NVIC
 	NVIC_EnableIRQ(EXTI0_1_IRQn); 	   // Enable EXTI0_1 interrupts in NVIC
 }
 
